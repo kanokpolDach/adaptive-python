@@ -9,7 +9,13 @@ import subprocess
 import traceback
 
 
+# =========================================================
+# FLASK SERVER
+# =========================================================
+
 app = Flask(__name__)
+
+# อนุญาตให้ Vercel Frontend เรียกใช้งาน API
 CORS(app)
 
 
@@ -53,18 +59,21 @@ def analyze_error(error_text, code):
                 error_info["code"] = lines[e.lineno - 1]
 
         if error_type == "IndentationError":
+
             error_info["suggestion"] = (
                 "ตรวจสอบการเยื้องบรรทัด (Indentation) "
                 "ให้สม่ำเสมอ โดยทั่วไป Python ใช้ 4 ช่องว่าง"
             )
 
         elif error_type == "TabError":
+
             error_info["suggestion"] = (
                 "อย่าใช้ Tab และ Space ปะปนกัน "
                 "แนะนำให้ใช้ Space จำนวน 4 ช่อง"
             )
 
         else:
+
             error_info["suggestion"] = (
                 "ตรวจสอบเครื่องหมาย เช่น :, (), [], {}, "
                 "เครื่องหมายคำพูด และโครงสร้างคำสั่ง Python"
@@ -84,6 +93,7 @@ def analyze_error(error_text, code):
         if 'File "' in line and ", line " in line:
 
             try:
+
                 line_number = int(
                     line.split(", line ")[1].split(",")[0]
                 )
@@ -121,7 +131,9 @@ def analyze_error(error_text, code):
     detected_type = None
 
     for error_type in error_types:
+
         if error_type in error_text:
+
             detected_type = error_type
             break
 
@@ -177,7 +189,6 @@ def analyze_error(error_text, code):
 
         "AssertionError":
             "เงื่อนไขที่ใช้ใน assert ไม่เป็นจริง",
-
     }
 
     if detected_type in suggestions:
@@ -196,14 +207,15 @@ def execute_python(code):
 
     try:
 
-        # -----------------------------------------------
+        # -------------------------------------------------
         # ตรวจสอบ Syntax ก่อน
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         try:
+
             ast.parse(code)
 
-        except SyntaxError as e:
+        except SyntaxError:
 
             error_info = analyze_error(
                 traceback.format_exc(),
@@ -213,13 +225,13 @@ def execute_python(code):
             return {
                 "success": False,
                 "output": "",
-                "error": str(e),
+                "error": "Syntax Error",
                 "error_info": error_info
             }
 
-        # -----------------------------------------------
+        # -------------------------------------------------
         # สร้าง Temporary Python File
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         with tempfile.NamedTemporaryFile(
             mode="w",
@@ -231,9 +243,9 @@ def execute_python(code):
             f.write(code)
             temp_file = f.name
 
-        # -----------------------------------------------
+        # -------------------------------------------------
         # Run Python
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         result = subprocess.run(
             [sys.executable, temp_file],
@@ -245,9 +257,9 @@ def execute_python(code):
         output = result.stdout
         error = result.stderr
 
-        # -----------------------------------------------
+        # -------------------------------------------------
         # ไม่มี Error
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         if result.returncode == 0:
 
@@ -258,9 +270,9 @@ def execute_python(code):
                 "error_info": None
             }
 
-        # -----------------------------------------------
+        # -------------------------------------------------
         # มี Runtime Error
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         error_info = analyze_error(
             error,
@@ -273,6 +285,10 @@ def execute_python(code):
             "error": error,
             "error_info": error_info
         }
+
+    # -----------------------------------------------------
+    # Timeout
+    # -----------------------------------------------------
 
     except subprocess.TimeoutExpired:
 
@@ -294,6 +310,10 @@ def execute_python(code):
             "error_info": error_info
         }
 
+    # -----------------------------------------------------
+    # Other Error
+    # -----------------------------------------------------
+
     except Exception as e:
 
         error_info = {
@@ -310,6 +330,10 @@ def execute_python(code):
             "error": str(e),
             "error_info": error_info
         }
+
+    # -----------------------------------------------------
+    # Delete Temporary File
+    # -----------------------------------------------------
 
     finally:
 
@@ -338,6 +362,7 @@ def check_exercise_1(tree):
             for target in node.targets:
 
                 if isinstance(target, ast.Name):
+
                     if target.id == "name":
                         has_name = True
 
@@ -522,11 +547,9 @@ def check_exercise_7(tree):
     for node in ast.walk(tree):
 
         if isinstance(node, ast.If):
-
             has_if = True
 
         if isinstance(node, ast.Compare):
-
             has_comparison = True
 
         if isinstance(node, ast.Call):
@@ -549,7 +572,6 @@ def check_exercise_8(tree):
     for node in ast.walk(tree):
 
         if isinstance(node, ast.For):
-
             has_for = True
 
         if isinstance(node, ast.Call):
@@ -573,7 +595,6 @@ def check_exercise_9(tree):
     for node in ast.walk(tree):
 
         if isinstance(node, ast.While):
-
             has_while = True
 
         if isinstance(node, ast.Call):
@@ -719,6 +740,7 @@ def check_exercise():
         }), 400
 
     try:
+
         exercise = int(exercise)
 
     except (TypeError, ValueError):
@@ -739,9 +761,9 @@ def check_exercise():
             "error": "กรุณาเขียนโค้ดก่อนตรวจคำตอบ"
         }), 400
 
-    # -----------------------------------------------
+    # -----------------------------------------------------
     # Run code
-    # -----------------------------------------------
+    # -----------------------------------------------------
 
     result = execute_python(code)
 
@@ -755,9 +777,9 @@ def check_exercise():
             "error_info": result["error_info"]
         }), 400
 
-    # -----------------------------------------------
+    # -----------------------------------------------------
     # ตรวจคำตอบ
-    # -----------------------------------------------
+    # -----------------------------------------------------
 
     correct = validate_exercise(
         code,
@@ -774,7 +796,7 @@ def check_exercise():
 
 
 # =========================================================
-# TEST ROUTE
+# HOME / TEST ROUTE
 # =========================================================
 
 @app.route("/", methods=["GET"])
@@ -782,6 +804,7 @@ def home():
 
     return jsonify({
         "message": "Adaptive Python Server is running",
+        "status": "online",
         "endpoints": [
             "/run-python",
             "/check-exercise"
@@ -795,16 +818,18 @@ def home():
 
 if __name__ == "__main__":
 
+    port = int(os.environ.get("PORT", 5000))
+
     print("=" * 50)
     print("🐍 Adaptive Python Server")
     print("=" * 50)
-    print("Server: http://127.0.0.1:5000")
+    print(f"Server running on port {port}")
     print("Playground: POST /run-python")
     print("Practice:   POST /check-exercise")
     print("=" * 50)
 
     app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=True
+        host="0.0.0.0",
+        port=port,
+        debug=False
     )
