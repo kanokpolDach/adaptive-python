@@ -6,7 +6,6 @@ import os
 import sys
 import tempfile
 import subprocess
-import traceback
 
 
 # =========================================================
@@ -15,8 +14,15 @@ import traceback
 
 app = Flask(__name__)
 
-# อนุญาตให้ Vercel Frontend เรียกใช้งาน API
-CORS(app)
+# อนุญาตให้ Frontend จาก Vercel เรียก API
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": "*"
+        }
+    }
+)
 
 
 # =========================================================
@@ -24,9 +30,6 @@ CORS(app)
 # =========================================================
 
 def analyze_error(error_text, code):
-    """
-    วิเคราะห์ Error จาก Python
-    """
 
     lines = code.splitlines()
 
@@ -39,7 +42,7 @@ def analyze_error(error_text, code):
     }
 
     # -----------------------------------------------------
-    # Syntax Error / Indentation Error
+    # Syntax Error
     # -----------------------------------------------------
 
     try:
@@ -53,6 +56,7 @@ def analyze_error(error_text, code):
         error_info["message"] = e.msg
 
         if e.lineno:
+
             error_info["line"] = e.lineno
 
             if 1 <= e.lineno <= len(lines):
@@ -62,7 +66,7 @@ def analyze_error(error_text, code):
 
             error_info["suggestion"] = (
                 "ตรวจสอบการเยื้องบรรทัด (Indentation) "
-                "ให้สม่ำเสมอ โดยทั่วไป Python ใช้ 4 ช่องว่าง"
+                "ให้สม่ำเสมอ โดย Python แนะนำให้ใช้ Space 4 ช่อง"
             )
 
         elif error_type == "TabError":
@@ -82,12 +86,11 @@ def analyze_error(error_text, code):
         return error_info
 
     # -----------------------------------------------------
-    # Runtime Errors
+    # Runtime Error
     # -----------------------------------------------------
 
     error_lines = error_text.strip().splitlines()
 
-    # หา line จาก Traceback
     for line in reversed(error_lines):
 
         if 'File "' in line and ", line " in line:
@@ -109,7 +112,7 @@ def analyze_error(error_text, code):
                 pass
 
     # -----------------------------------------------------
-    # Error Type
+    # Error Types
     # -----------------------------------------------------
 
     error_types = [
@@ -126,6 +129,7 @@ def analyze_error(error_text, code):
         "OverflowError",
         "RuntimeError",
         "AssertionError",
+        "RecursionError"
     ]
 
     detected_type = None
@@ -182,13 +186,19 @@ def analyze_error(error_text, code):
             "ตรวจสอบชื่อและตำแหน่งไฟล์",
 
         "ImportError":
-            "ตรวจสอบคำสั่ง import และชื่อสิ่งที่ต้องการนำเข้า",
+            "ตรวจสอบคำสั่ง import "
+            "และชื่อสิ่งที่ต้องการนำเข้า",
 
         "OverflowError":
-            "ค่าที่คำนวณมีขนาดใหญ่เกินกว่าที่ Python รองรับ",
+            "ค่าที่คำนวณมีขนาดใหญ่เกินไป "
+            "ลองตรวจสอบค่าที่ใช้ในการคำนวณ",
 
         "AssertionError":
             "เงื่อนไขที่ใช้ใน assert ไม่เป็นจริง",
+
+        "RecursionError":
+            "ฟังก์ชันเรียกตัวเองมากเกินไป "
+            "ตรวจสอบเงื่อนไขการหยุดของ Recursion"
     }
 
     if detected_type in suggestions:
@@ -208,7 +218,7 @@ def execute_python(code):
     try:
 
         # -------------------------------------------------
-        # ตรวจสอบ Syntax ก่อน
+        # ตรวจสอบ Syntax
         # -------------------------------------------------
 
         try:
@@ -216,6 +226,8 @@ def execute_python(code):
             ast.parse(code)
 
         except SyntaxError:
+
+            import traceback
 
             error_info = analyze_error(
                 traceback.format_exc(),
@@ -230,7 +242,7 @@ def execute_python(code):
             }
 
         # -------------------------------------------------
-        # สร้าง Temporary Python File
+        # สร้าง Temporary File
         # -------------------------------------------------
 
         with tempfile.NamedTemporaryFile(
@@ -248,7 +260,10 @@ def execute_python(code):
         # -------------------------------------------------
 
         result = subprocess.run(
-            [sys.executable, temp_file],
+            [
+                sys.executable,
+                temp_file
+            ],
             capture_output=True,
             text=True,
             timeout=5
@@ -258,7 +273,7 @@ def execute_python(code):
         error = result.stderr
 
         # -------------------------------------------------
-        # ไม่มี Error
+        # สำเร็จ
         # -------------------------------------------------
 
         if result.returncode == 0:
@@ -271,7 +286,7 @@ def execute_python(code):
             }
 
         # -------------------------------------------------
-        # มี Runtime Error
+        # Runtime Error
         # -------------------------------------------------
 
         error_info = analyze_error(
@@ -321,7 +336,7 @@ def execute_python(code):
             "message": str(e),
             "line": None,
             "code": None,
-            "suggestion": "ตรวจสอบโค้ดและลองใหม่อีกครั้ง"
+            "suggestion": "ตรวจสอบ Server และลองใหม่อีกครั้ง"
         }
 
         return {
@@ -332,7 +347,7 @@ def execute_python(code):
         }
 
     # -----------------------------------------------------
-    # Delete Temporary File
+    # ลบ Temporary File
     # -----------------------------------------------------
 
     finally:
@@ -347,7 +362,7 @@ def execute_python(code):
 
 
 # =========================================================
-# PRACTICE CHECKERS
+# PRACTICE CHECKER 1
 # =========================================================
 
 def check_exercise_1(tree):
@@ -376,6 +391,10 @@ def check_exercise_1(tree):
 
     return has_name and has_print
 
+
+# =========================================================
+# PRACTICE CHECKER 2
+# =========================================================
 
 def check_exercise_2(tree):
 
@@ -407,6 +426,10 @@ def check_exercise_2(tree):
 
     return has_age and has_name and has_print
 
+
+# =========================================================
+# PRACTICE CHECKER 3
+# =========================================================
 
 def check_exercise_3(tree):
 
@@ -445,6 +468,10 @@ def check_exercise_3(tree):
     return has_a and has_b and has_addition and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 4
+# =========================================================
+
 def check_exercise_4(tree):
 
     has_first_name = False
@@ -475,6 +502,10 @@ def check_exercise_4(tree):
 
     return has_first_name and has_last_name and has_print
 
+
+# =========================================================
+# PRACTICE CHECKER 5
+# =========================================================
 
 def check_exercise_5(tree):
 
@@ -507,6 +538,10 @@ def check_exercise_5(tree):
     return has_fruits and has_list and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 6
+# =========================================================
+
 def check_exercise_6(tree):
 
     has_numbers = False
@@ -538,6 +573,10 @@ def check_exercise_6(tree):
     return has_numbers and has_tuple and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 7
+# =========================================================
+
 def check_exercise_7(tree):
 
     has_if = False
@@ -563,6 +602,10 @@ def check_exercise_7(tree):
     return has_if and has_comparison and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 8
+# =========================================================
+
 def check_exercise_8(tree):
 
     has_for = False
@@ -587,6 +630,10 @@ def check_exercise_8(tree):
     return has_for and has_range and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 9
+# =========================================================
+
 def check_exercise_9(tree):
 
     has_while = False
@@ -608,20 +655,19 @@ def check_exercise_9(tree):
     return has_while and has_print
 
 
+# =========================================================
+# PRACTICE CHECKER 10
+# =========================================================
+
 def check_exercise_10(tree):
 
     has_function = False
     has_print = False
-    has_call = False
-
-    function_names = set()
 
     for node in ast.walk(tree):
 
         if isinstance(node, ast.FunctionDef):
-
             has_function = True
-            function_names.add(node.name)
 
         if isinstance(node, ast.Call):
 
@@ -630,12 +676,6 @@ def check_exercise_10(tree):
                 and node.func.id == "print"
             ):
                 has_print = True
-
-            if (
-                isinstance(node.func, ast.Name)
-                and node.func.id in function_names
-            ):
-                has_call = True
 
     return has_function and has_print
 
@@ -665,7 +705,7 @@ def validate_exercise(code, exercise):
         7: check_exercise_7,
         8: check_exercise_8,
         9: check_exercise_9,
-        10: check_exercise_10,
+        10: check_exercise_10
 
     }
 
@@ -678,7 +718,7 @@ def validate_exercise(code, exercise):
 
 
 # =========================================================
-# ROUTE: PLAYGROUND
+# ROUTE: RUN PYTHON
 # =========================================================
 
 @app.route("/run-python", methods=["POST"])
@@ -689,7 +729,9 @@ def run_python():
     if not data:
 
         return jsonify({
-            "error": "ไม่พบข้อมูล"
+            "success": False,
+            "error": "ไม่พบข้อมูล",
+            "error_info": None
         }), 400
 
     code = data.get("code", "")
@@ -697,26 +739,26 @@ def run_python():
     if not isinstance(code, str):
 
         return jsonify({
-            "error": "code ต้องเป็นข้อความ"
+            "success": False,
+            "error": "code ต้องเป็นข้อความ",
+            "error_info": None
         }), 400
 
     if not code.strip():
 
         return jsonify({
-            "error": "กรุณาเขียน Python ก่อน Run"
+            "success": False,
+            "error": "กรุณาเขียน Python ก่อน Run",
+            "error_info": None
         }), 400
 
     result = execute_python(code)
 
-    return jsonify({
-        "output": result["output"],
-        "error": result["error"],
-        "error_info": result["error_info"]
-    }), 200 if result["success"] else 400
+    return jsonify(result), 200 if result["success"] else 400
 
 
 # =========================================================
-# ROUTE: PRACTICE
+# ROUTE: CHECK EXERCISE
 # =========================================================
 
 @app.route("/check-exercise", methods=["POST"])
@@ -727,6 +769,7 @@ def check_exercise():
     if not data:
 
         return jsonify({
+            "success": False,
             "error": "ไม่พบข้อมูล"
         }), 400
 
@@ -736,6 +779,7 @@ def check_exercise():
     if not isinstance(code, str):
 
         return jsonify({
+            "success": False,
             "error": "code ต้องเป็นข้อความ"
         }), 400
 
@@ -746,23 +790,26 @@ def check_exercise():
     except (TypeError, ValueError):
 
         return jsonify({
+            "success": False,
             "error": "exercise ต้องเป็นตัวเลข"
         }), 400
 
     if exercise < 1 or exercise > 10:
 
         return jsonify({
+            "success": False,
             "error": "ไม่พบแบบฝึกหัดนี้"
         }), 400
 
     if not code.strip():
 
         return jsonify({
+            "success": False,
             "error": "กรุณาเขียนโค้ดก่อนตรวจคำตอบ"
         }), 400
 
     # -----------------------------------------------------
-    # Run code
+    # Run Code
     # -----------------------------------------------------
 
     result = execute_python(code)
@@ -770,6 +817,7 @@ def check_exercise():
     if not result["success"]:
 
         return jsonify({
+            "success": False,
             "output": result["output"],
             "error": result["error"],
             "correct": False,
@@ -787,6 +835,7 @@ def check_exercise():
     )
 
     return jsonify({
+        "success": True,
         "output": result["output"],
         "error": None,
         "correct": correct,
@@ -796,7 +845,7 @@ def check_exercise():
 
 
 # =========================================================
-# HOME / TEST ROUTE
+# HOME / HEALTH CHECK
 # =========================================================
 
 @app.route("/", methods=["GET"])
@@ -818,7 +867,9 @@ def home():
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 5000))
+    port = int(
+        os.environ.get("PORT", 5000)
+    )
 
     print("=" * 50)
     print("🐍 Adaptive Python Server")

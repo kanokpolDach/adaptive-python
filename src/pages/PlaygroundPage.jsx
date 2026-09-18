@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
 
-export default function PlaygroundPage() {
-  const [code, setCode] = useState(
-`name = "Python"
+const API_URL = "https://adaptive-python.onrender.com";
 
-print(name)`
-  );
+const DEFAULT_CODE = `name = "Python"
+
+print(name)`;
+
+export default function PlaygroundPage() {
+  const [code, setCode] = useState(DEFAULT_CODE);
 
   const [output, setOutput] = useState("");
   const [error, setError] = useState(null);
@@ -21,38 +23,43 @@ print(name)`
     return Number(localStorage.getItem("playground_success") || 0);
   });
 
-
   // =========================
   // Run Python
   // =========================
 
   const runPython = async () => {
+    if (!code.trim()) {
+      setError({
+        type: "Code Error",
+        title: "ไม่มี Code",
+        message: "กรุณาเขียน Python Code ก่อน Run",
+        line: null,
+        suggestion: "เขียน Python Code ในช่อง Code Editor แล้วลอง Run อีกครั้ง",
+      });
+
+      return;
+    }
 
     setIsRunning(true);
     setOutput("");
     setError(null);
 
     try {
+      const response = await fetch(`${API_URL}/run-python`, {
+        method: "POST",
 
-      const response = await fetch(
-        "http://127.0.0.1:5000/run-python",
-        {
-          method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            code: code,
-          }),
-        }
-      );
-
+        body: JSON.stringify({
+          code: code,
+        }),
+      });
 
       const result = await response.json();
 
-
+      // เพิ่มจำนวนครั้งที่ Run
       const newRunCount = runCount + 1;
 
       setRunCount(newRunCount);
@@ -62,39 +69,55 @@ print(name)`
         newRunCount
       );
 
+      // =========================
+      // Python Error
+      // =========================
 
       if (!response.ok) {
+        setOutput(result.output || "");
 
         setError(
           result.error_info || {
+            type: "Python Error",
             title: "เกิดข้อผิดพลาด",
-            message: result.error || "ไม่สามารถรัน Code ได้",
+            message:
+              result.error ||
+              "ไม่สามารถรัน Python Code ได้",
             line: null,
-            suggestion: "ตรวจสอบ Code แล้วลองใหม่อีกครั้ง",
+            suggestion:
+              "ตรวจสอบ Code แล้วลองแก้ไขอีกครั้ง",
           }
         );
 
         return;
       }
 
+      // =========================
+      // Error จาก Python
+      // =========================
 
       if (result.error) {
+        setOutput(result.output || "");
 
         setError(
           result.error_info || {
+            type: "Python Error",
             title: "เกิดข้อผิดพลาด",
             message: result.error,
             line: null,
-            suggestion: "ตรวจสอบ Code แล้วลองใหม่อีกครั้ง",
+            suggestion:
+              "ตรวจสอบ Code แล้วลองแก้ไขอีกครั้ง",
           }
         );
 
         return;
       }
 
+      // =========================
+      // Success
+      // =========================
 
       setOutput(result.output || "ไม่มี Output");
-
 
       const newSuccessCount = successCount + 1;
 
@@ -106,53 +129,39 @@ print(name)`
       );
 
     } catch (err) {
-
       setError({
+        type: "Connection Error",
         title: "ไม่สามารถเชื่อมต่อ Python Server",
         message:
           "ไม่สามารถเชื่อมต่อกับ Python Server ได้",
         line: null,
         suggestion:
-          "ตรวจสอบว่า server.py กำลังทำงานอยู่ที่ http://127.0.0.1:5000",
+          "ตรวจสอบการเชื่อมต่อ Internet และตรวจสอบว่า Render Server กำลังทำงานอยู่",
       });
-
     } finally {
-
       setIsRunning(false);
-
     }
   };
-
 
   // =========================
   // Reset
   // =========================
 
   const resetCode = () => {
-
-    setCode(
-`name = "Python"
-
-print(name)`
-    );
-
+    setCode(DEFAULT_CODE);
     setOutput("");
     setError(null);
   };
-
 
   // =========================
   // Clear
   // =========================
 
   const clearCode = () => {
-
     setCode("");
     setOutput("");
     setError(null);
-
   };
-
 
   // =========================
   // Keyboard Shortcut
@@ -160,40 +169,28 @@ print(name)`
   // =========================
 
   useEffect(() => {
-
     const handleKeyDown = (event) => {
-
       if (
         (event.ctrlKey || event.metaKey) &&
         event.key === "Enter"
       ) {
-
         event.preventDefault();
-
         runPython();
-
       }
-
     };
-
 
     window.addEventListener(
       "keydown",
       handleKeyDown
     );
 
-
     return () => {
-
       window.removeEventListener(
         "keydown",
         handleKeyDown
       );
-
     };
-
   });
-
 
   // =========================
   // Line Count
@@ -204,22 +201,17 @@ print(name)`
     1
   );
 
-
   const lines = Array.from(
     { length: lineCount },
     (_, index) => index + 1
   );
 
-
   return (
-
     <div className="min-h-screen bg-slate-950 text-white">
 
       <Header />
 
-
       <main className="mx-auto max-w-7xl px-6 py-8">
-
 
         {/* =========================
             Header
@@ -245,7 +237,6 @@ print(name)`
 
             </div>
 
-
             <Link
               to="/practice"
               className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
@@ -257,13 +248,11 @@ print(name)`
 
         </div>
 
-
         {/* =========================
             Statistics
         ========================= */}
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
-
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
 
@@ -276,7 +265,6 @@ print(name)`
             </div>
 
           </div>
-
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
 
@@ -292,13 +280,11 @@ print(name)`
 
         </div>
 
-
         {/* =========================
             Editor
         ========================= */}
 
         <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-
 
           {/* Editor Header */}
 
@@ -322,33 +308,27 @@ print(name)`
 
             </div>
 
-
             <div className="text-xs text-slate-500">
               Ctrl + Enter เพื่อ Run
             </div>
 
           </div>
 
-
           {/* Editor */}
 
           <div className="flex min-h-[420px] bg-slate-950">
-
 
             {/* Line Numbers */}
 
             <div className="select-none border-r border-slate-800 bg-slate-900 px-4 py-5 text-right font-mono text-sm leading-7 text-slate-600">
 
               {lines.map((line) => (
-
                 <div key={line}>
                   {line}
                 </div>
-
               ))}
 
             </div>
-
 
             {/* Textarea */}
 
@@ -364,24 +344,19 @@ print(name)`
 
           </div>
 
-
           {/* Buttons */}
 
           <div className="flex flex-wrap gap-3 border-t border-slate-800 bg-slate-900 p-4">
-
 
             <button
               onClick={runPython}
               disabled={isRunning}
               className="rounded-xl bg-green-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-
               {isRunning
                 ? "⏳ กำลัง Run..."
                 : "▶ Run Python"}
-
             </button>
-
 
             <button
               onClick={resetCode}
@@ -389,7 +364,6 @@ print(name)`
             >
               ↻ Reset
             </button>
-
 
             <button
               onClick={clearCode}
@@ -402,7 +376,6 @@ print(name)`
 
         </div>
 
-
         {/* =========================
             Error
         ========================= */}
@@ -410,7 +383,6 @@ print(name)`
         {error && (
 
           <div className="mt-6 overflow-hidden rounded-2xl border border-red-900 bg-red-950/40">
-
 
             <div className="border-b border-red-900 px-5 py-4">
 
@@ -423,15 +395,15 @@ print(name)`
                 <div>
 
                   <h2 className="font-bold text-red-300">
-                    {error.title || "Python Error"}
+                    {error.title ||
+                      error.type ||
+                      "Python Error"}
                   </h2>
 
                   {error.line && (
-
                     <p className="mt-1 text-sm text-red-400">
                       พบปัญหาที่บรรทัด {error.line}
                     </p>
-
                   )}
 
                 </div>
@@ -440,9 +412,7 @@ print(name)`
 
             </div>
 
-
             <div className="space-y-5 p-5">
-
 
               {/* Message */}
 
@@ -460,23 +430,23 @@ print(name)`
 
               </div>
 
-
               {/* Suggestion */}
 
-              <div>
+              {error.suggestion && (
+                <div>
 
-                <div className="mb-2 text-sm font-bold text-slate-400">
-                  💡 วิธีแก้ไข
+                  <div className="mb-2 text-sm font-bold text-slate-400">
+                    💡 วิธีแก้ไข
+                  </div>
+
+                  <div className="rounded-xl bg-slate-950 p-4 text-sm leading-7 text-slate-300">
+
+                    {error.suggestion}
+
+                  </div>
+
                 </div>
-
-                <div className="rounded-xl bg-slate-950 p-4 text-sm leading-7 text-slate-300">
-
-                  {error.suggestion}
-
-                </div>
-
-              </div>
-
+              )}
 
               {/* Error type */}
 
@@ -494,13 +464,11 @@ print(name)`
 
         )}
 
-
         {/* =========================
             Output
         ========================= */}
 
         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-
 
           <div className="border-b border-slate-800 px-5 py-4">
 
@@ -517,7 +485,6 @@ print(name)`
             </div>
 
           </div>
-
 
           <div className="min-h-[160px] bg-black p-5">
 
@@ -538,7 +505,6 @@ print(name)`
           </div>
 
         </div>
-
 
         {/* =========================
             Help
@@ -572,10 +538,14 @@ print(name)`
 
         </div>
 
-
       </main>
 
-    </div>
+      {/* Footer */}
 
+      <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
+        Adaptive Python © 2026
+      </footer>
+
+    </div>
   );
 }
