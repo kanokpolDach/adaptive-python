@@ -75,6 +75,15 @@ export default function Home() {
                   💻 ทดลองเขียน Python
                 </Link>
 
+                {/* Football */}
+
+                <Link
+                  to="/football"
+                  className="rounded-xl border border-green-500/50 bg-green-950/30 px-7 py-4 font-bold text-green-300 transition hover:border-green-400 hover:bg-green-900/40 hover:shadow-lg hover:shadow-green-500/10"
+                >
+                  ⚽ เล่น Football Coding
+                </Link>
+
               </div>
 
             </div>
@@ -101,13 +110,13 @@ export default function Home() {
             </h2>
 
             <p className="mt-3 text-slate-400">
-              เรียนรู้ → ฝึกฝน → ท้าทาย → ทดลองเขียนด้วยตัวเอง
+              เรียนรู้ → ฝึกฝน → ท้าทาย → ทดลอง → เล่นเกม
             </p>
 
           </div>
 
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
 
 
             {/* Learning */}
@@ -221,6 +230,216 @@ export default function Home() {
 
             </div>
 
+
+            {/* Football Coding */}
+
+            <div className="group relative overflow-hidden rounded-2xl border border-green-800 bg-gradient-to-br from-green-950 via-slate-900 to-slate-900 p-7 transition hover:-translate-y-1 hover:border-green-400 hover:shadow-lg hover:shadow-green-500/10">
+
+              <div className="absolute right-3 top-3 text-4xl opacity-20 transition group-hover:scale-110 group-hover:opacity-40">
+                ⚽
+              </div>
+
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-900 text-3xl">
+                ⚽
+              </div>
+
+              <h3 className="text-xl font-bold">
+                Football Coding
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-400">
+                เรียน Python ผ่านเกมฟุตบอล 3D
+                เขียน Code ให้ถูกต้องเพื่อยิงประตู
+                สะสม XP และผ่าน Mission
+              </p>
+
+              <Link
+                to="/football"
+                className="mt-6 inline-block font-semibold text-green-400 hover:text-green-300"
+              >
+                เล่นเกม →
+              </Link>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        {/* ==================================================
+            Football Coding Mission
+        ================================================== */}
+
+        <section className="border-y border-green-900/50 bg-gradient-to-b from-green-950/20 to-slate-950">
+
+          <div className="mx-auto max-w-7xl px-6 py-20">
+
+            <div className="overflow-hidden rounded-3xl border border-green-800 bg-slate-900 shadow-2xl">
+
+              <div className="grid items-center gap-10 lg:grid-cols-2">
+
+                {/* Left */}
+
+                <div className="p-8 md:p-12">
+
+                  <div className="inline-flex items-center gap-2 rounded-full border border-green-700 bg-green-950/50 px-4 py-2 text-sm font-semibold text-green-300">
+                    ⚽ NEW GAME
+                  </div>
+
+                  <h2 className="mt-5 text-3xl font-black sm:text-4xl">
+                    Football Coding Mission
+                    <span className="block text-green-400">
+                      Learn Python Through 3D Game
+                    </span>
+                  </h2>
+
+                  <p className="mt-5 leading-8 text-slate-400">
+                    เปลี่ยนการเรียน Python ให้สนุกมากขึ้น
+                    ด้วยเกมฟุตบอล 3D ผู้เรียนต้องเขียน Python
+                    เพื่อทำภารกิจให้สำเร็จและยิงประตู
+                  </p>
+
+
+                  {/* Features */}
+
+                  <div className="mt-7 grid gap-3 sm:grid-cols-2">
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      สนามฟุตบอล 3D
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      ตัวละคร 3D
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      Coding Mission
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      ระบบ XP
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      Goal Animation
+                    </div>
+
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <span className="text-green-400">✓</span>
+                      Python Server
+                    </div>
+
+                  </div>
+
+
+                  <Link
+                    to="/football"
+                    className="mt-8 inline-flex items-center gap-2 rounded-xl bg-green-500 px-7 py-4 font-black text-slate-950 transition hover:bg-green-400 hover:shadow-lg hover:shadow-green-500/20"
+                  >
+                    ⚽ เล่น Football Coding Mission
+                    <span>→</span>
+                  </Link>
+
+                </div>
+
+
+                {/* Right - Game Preview */}
+
+                <div className="relative min-h-[400px] overflow-hidden bg-gradient-to-b from-green-900 to-green-950">
+
+                  {/* Stadium lights */}
+
+                  <div className="absolute left-10 top-10 h-32 w-32 rounded-full bg-green-400/10 blur-3xl" />
+
+                  <div className="absolute right-10 top-20 h-40 w-40 rounded-full bg-yellow-400/10 blur-3xl" />
+
+
+                  {/* Goal */}
+
+                  <div className="absolute left-1/2 top-20 -translate-x-1/2">
+
+                    <div className="relative h-40 w-64 border-8 border-white/90">
+
+                      <div className="absolute inset-0 bg-white/5" />
+
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-6xl">
+                        🧤
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* Ball */}
+
+                  <div className="absolute left-1/2 top-[250px] -translate-x-1/2 text-5xl drop-shadow-lg">
+                    ⚽
+                  </div>
+
+
+                  {/* Player */}
+
+                  <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-7xl drop-shadow-2xl">
+                    🧍
+                  </div>
+
+
+                  {/* Field Lines */}
+
+                  <div className="absolute bottom-0 left-0 right-0 h-1/2 border-t border-white/20 bg-green-800/30">
+
+                    <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20" />
+
+                  </div>
+
+
+                  {/* HUD */}
+
+                  <div className="absolute left-5 top-5 rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur">
+
+                    <div className="text-xs text-slate-300">
+                      FOOTBALL CODING
+                    </div>
+
+                    <div className="mt-1 font-black text-green-400">
+                      MISSION 01
+                    </div>
+
+                  </div>
+
+
+                  <div className="absolute right-5 top-5 rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-right backdrop-blur">
+
+                    <div className="text-xs text-slate-300">
+                      XP
+                    </div>
+
+                    <div className="font-black text-yellow-400">
+                      +100
+                    </div>
+
+                  </div>
+
+
+                  {/* Bottom message */}
+
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-green-400/30 bg-black/60 px-5 py-2 text-sm font-bold text-green-300 backdrop-blur">
+                    🐍 Write Code → ⚽ Score Goal!
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
 
         </section>
@@ -251,7 +470,7 @@ export default function Home() {
             </div>
 
 
-            <div className="grid gap-8 md:grid-cols-4">
+            <div className="grid gap-8 md:grid-cols-5">
 
 
               {/* Step 1 */}
@@ -329,6 +548,26 @@ export default function Home() {
                 <p className="mt-2 leading-6 text-slate-400">
                   ทดลองเขียน Code
                   ใน Python Playground
+                </p>
+
+              </div>
+
+
+              {/* Step 5 */}
+
+              <div className="relative text-center">
+
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-2xl font-black text-slate-950">
+                  5
+                </div>
+
+                <h3 className="mt-5 text-xl font-bold">
+                  เล่นเกม
+                </h3>
+
+                <p className="mt-2 leading-6 text-slate-400">
+                  นำความรู้ไปใช้กับ
+                  Football Coding Mission
                 </p>
 
               </div>
@@ -595,7 +834,8 @@ export default function Home() {
               เริ่มจากการเรียนรู้พื้นฐาน
               ทำความเข้าใจผ่านบทเรียน
               ฝึกทำแบบฝึกหัด
-              และท้าทายตัวเองด้วย Code Challenge
+              ท้าทายตัวเองด้วย Code Challenge
+              และนำความรู้ไปใช้ผ่านเกมฟุตบอล 3D
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -626,6 +866,13 @@ export default function Home() {
                 className="rounded-xl border border-slate-700 px-7 py-3 font-bold transition hover:bg-slate-800"
               >
                 💻 Playground
+              </Link>
+
+              <Link
+                to="/football"
+                className="rounded-xl bg-green-500 px-7 py-3 font-bold text-slate-950 transition hover:bg-green-400"
+              >
+                ⚽ Football
               </Link>
 
             </div>

@@ -9,60 +9,90 @@ import LearningPage from "./pages/LearningPage";
 import PracticePage from "./pages/PracticePage";
 import PlaygroundPage from "./pages/PlaygroundPage";
 import ChallengePage from "./pages/ChallengePage";
+import FootballMissionPage from "./pages/FootballMissionPage";
+import MultiplayerPage from "./pages/MultiplayerPage";
+import MultiplayerGamePage from "./pages/MultiplayerPage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* =========================
-            Home
-        ========================= */}
+        {/* ========================= */}
+        {/* HOME */}
+        {/* ========================= */}
 
         <Route
           path="/"
           element={<Home />}
         />
 
-        {/* =========================
-            Learning
-        ========================= */}
+        {/* ========================= */}
+        {/* LEARNING */}
+        {/* ========================= */}
 
         <Route
           path="/learning"
           element={<LearningPage />}
         />
 
-        {/* =========================
-            Practice
-        ========================= */}
+        {/* ========================= */}
+        {/* PRACTICE */}
+        {/* ========================= */}
 
         <Route
           path="/practice"
           element={<PracticePage />}
         />
 
-        {/* =========================
-            Playground
-        ========================= */}
+        {/* ========================= */}
+        {/* PLAYGROUND */}
+        {/* ========================= */}
 
         <Route
           path="/playground"
           element={<PlaygroundPage />}
         />
 
-        {/* =========================
-            Challenge
-        ========================= */}
+        {/* ========================= */}
+        {/* CHALLENGE */}
+        {/* ========================= */}
 
         <Route
           path="/challenge"
           element={<ChallengePage />}
         />
 
-        {/* =========================
-            404
-        ========================= */}
+        {/* ========================= */}
+        {/* FOOTBALL CODING */}
+        {/* ========================= */}
+
+        <Route
+          path="/football"
+          element={<FootballMissionPage />}
+        />
+
+        {/* ========================= */}
+        {/* FOOTBALL MULTIPLAYER LOBBY */}
+        {/* ========================= */}
+
+        <Route
+          path="/football/multiplayer"
+          element={<MultiplayerPage />}
+        />
+
+        {/* ========================= */}
+        {/* FOOTBALL MULTIPLAYER GAME */}
+        {/* ========================= */}
+
+        <Route
+          path="/football/multiplayer/game"
+          element={<MultiplayerGamePage />}
+        />
+
+        {/* ========================= */}
+        {/* 404 */}
+        {/* ========================= */}
 
         <Route
           path="*"
