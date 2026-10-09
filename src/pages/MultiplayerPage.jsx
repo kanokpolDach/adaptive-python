@@ -1,58 +1,31 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
-
-// =====================================================
-// SOCKET SERVER
-// =====================================================
-// ถ้า Backend อยู่ Render ให้ใช้ URL นี้
-// ถ้าทดสอบ Local ให้เปลี่ยนเป็น http://127.0.0.1:5000
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || "https://adaptive-python.onrender.com";
-
-const socket = io(SOCKET_URL, {
-  transports: ["websocket", "polling"],
-  autoConnect: true,
-});
-
-// =====================================================
-// COMPONENT
-// =====================================================
+import { Link, useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import { socket } from "../socket";
 
 export default function MultiplayerPage() {
   const navigate = useNavigate();
 
-  // ===================================================
-  // STATE
-  // ===================================================
-
   const [name, setName] = useState("");
-
   const [roomCodeInput, setRoomCodeInput] = useState("");
 
   const [roomCode, setRoomCode] = useState("");
-
   const [playerId, setPlayerId] = useState("");
-
   const [ownerId, setOwnerId] = useState("");
 
   const [players, setPlayers] = useState([]);
-
   const [status, setStatus] = useState("lobby");
 
   const [message, setMessage] = useState("");
-
   const [error, setError] = useState("");
 
   const [connected, setConnected] = useState(false);
 
   const [ready, setReady] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
-  // ===================================================
+  // =====================================================
   // SOCKET CONNECTION
-  // ===================================================
+  // =====================================================
 
   useEffect(() => {
     function handleConnect() {
@@ -63,299 +36,169 @@ export default function MultiplayerPage() {
       setError("");
     }
 
-    function handleDisconnect(reason) {
-      console.log("Socket disconnected:", reason);
+    function handleDisconnect() {
+      console.log("Socket disconnected");
 
       setConnected(false);
-
-      setMessage("🔴 การเชื่อมต่อกับเซิร์ฟเวอร์หลุด");
     }
 
-    function handleConnectError(err) {
-      console.error("Socket connection error:", err);
-
-      setConnected(false);
-
-      setError(
-        "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบ Backend / Render"
-      );
-    }
-
-    // ===============================================
-    // ROOM CREATED
-    // ===============================================
+    // ===================================================
+    // CREATE ROOM
+    // ===================================================
 
     function handleRoomCreated(data) {
-      console.log("room_created:", data);
-
-      setLoading(false);
-
-      if (!data) {
-        setError("ไม่ได้รับข้อมูลห้องจากเซิร์ฟเวอร์");
-        return;
-      }
-
-      const code = data.roomCode || data.room || "";
-
-      if (!code) {
-        setError("เซิร์ฟเวอร์ไม่ได้ส่ง Room Code กลับมา");
-        return;
-      }
-
-      setRoomCode(code);
-
-      setOwnerId(
-        data.ownerId ||
-          data.hostId ||
-          data.creatorId ||
-          socket.id
-      );
-
-      setStatus("room");
-
-      setMessage(`สร้างห้อง ${code} สำเร็จ`);
-
-      setError("");
-
-      if (Array.isArray(data.players)) {
-        updatePlayers(data);
-      }
-    }
-
-    // ===============================================
-    // ROOM JOINED
-    // ===============================================
-
-    function handleRoomJoined(data) {
-      console.log("room_joined:", data);
-
-      setLoading(false);
-
-      if (!data) {
-        setError("ไม่ได้รับข้อมูลห้องจากเซิร์ฟเวอร์");
-        return;
-      }
-
-      const code = data.roomCode || data.room || roomCodeInput;
-
-      setRoomCode(code);
-
-      setOwnerId(
-        data.ownerId ||
-          data.hostId ||
-          data.creatorId ||
-          ""
-      );
-
-      setStatus("room");
-
-      setMessage(`เข้าห้อง ${code} สำเร็จ`);
-
-      setError("");
-
-      if (Array.isArray(data.players)) {
-        updatePlayers(data);
-      }
-    }
-
-    // ===============================================
-    // PLAYER JOINED
-    // ===============================================
-
-    function handlePlayerJoined(data) {
-      console.log("player_joined:", data);
-
-      if (!data) return;
-
-      updatePlayers(data);
-
-      if (data.player) {
-        setMessage(
-          `👤 ${data.player.name || "ผู้เล่นใหม่"} เข้าร่วมห้องแล้ว`
-        );
-      }
-    }
-
-    // ===============================================
-    // PLAYERS UPDATE
-    // ===============================================
-
-    function handlePlayersUpdate(data) {
-      console.log("players_update:", data);
-
-      updatePlayers(data);
-    }
-
-    // ===============================================
-    // PLAYER READY
-    // ===============================================
-
-    function handlePlayerReady(data) {
-      console.log("player_ready:", data);
-
-      updatePlayers(data);
-
-      if (data?.message) {
-        setMessage(data.message);
-      }
-    }
-
-    // ===============================================
-    // GAME STATE
-    // ===============================================
-
-    function handleGameState(data) {
-      console.log("game_state:", data);
-
-      if (!data) return;
-
-      if (data.players) {
-        updatePlayers(data);
-      }
-
-      if (data.status) {
-        setStatus(data.status);
-      }
-
-      if (data.roomCode) {
-        setRoomCode(data.roomCode);
-      }
-
-      if (data.message) {
-        setMessage(data.message);
-      }
-    }
-
-    // ===============================================
-    // START GAME RESULT
-    // ===============================================
-
-    function handleStartGameResult(data) {
-      console.log("start_game_result:", data);
-
-      setLoading(false);
-
-      if (!data?.success) {
+      if (!data.success) {
         setError(
           data?.message ||
-            "ไม่สามารถเริ่มการแข่งขันได้"
+            "ไม่สามารถสร้างห้องได้"
         );
-
         return;
       }
 
-      const nextRoomCode =
-        data.roomCode ||
-        data.room ||
-        roomCode ||
-        roomCodeInput;
+      setRoomCode(data.roomCode);
+      setPlayerId(data.playerId);
 
-      setMessage("🔥 เริ่มการแข่งขันแล้ว!");
+      updatePlayers(data.state);
 
-      setStatus("playing");
+      setStatus("waiting");
 
-      // รอเล็กน้อยเพื่อให้ Server sync ก่อนเปลี่ยนหน้า
-      setTimeout(() => {
-        navigate(
-          `/football/multiplayer/game?room=${encodeURIComponent(
-            nextRoomCode
-          )}`
-        );
-      }, 300);
+      setMessage(
+        `สร้างห้องสำเร็จ! Room Code: ${data.roomCode}`
+      );
     }
 
-    // ===============================================
-    // GAME STARTED
-    // ===============================================
+    // ===================================================
+    // JOIN ROOM
+    // ===================================================
 
-    function handleGameStarted(data) {
-      console.log("game_started:", data);
+    function handleRoomJoined(data) {
+      if (!data.success) {
+        setError(
+          data?.message ||
+            "ไม่สามารถเข้าห้องได้"
+        );
+        return;
+      }
 
-      const nextRoomCode =
-        data?.roomCode ||
-        data?.room ||
-        roomCode;
+      setRoomCode(data.roomCode);
+      setPlayerId(data.playerId);
 
-      setStatus("playing");
+      updatePlayers(data.state);
 
-      setMessage("🔥 เริ่มการแข่งขันแล้ว!");
+      setStatus(data.state.status);
 
-      if (nextRoomCode) {
-        setTimeout(() => {
-          navigate(
-            `/football/multiplayer/game?room=${encodeURIComponent(
-              nextRoomCode
-            )}`
-          );
-        }, 300);
+      setMessage(
+        `เข้าห้อง ${data.roomCode} สำเร็จ`
+      );
+    }
+
+    // ===================================================
+    // PLAYER JOINED
+    // ===================================================
+
+    function handlePlayerJoined(data) {
+      updatePlayers(data.state);
+
+      setStatus(data.state.status);
+
+      setMessage(
+        "🎮 มีผู้เล่นเข้าห้องแล้ว!"
+      );
+    }
+
+    // ===================================================
+    // GAME STATE
+    // ===================================================
+
+    function handleGameState(data) {
+      updatePlayers(data.state);
+
+      setStatus(data.state.status);
+
+      if (data.state.status === "ready") {
+        setMessage("✅ ผู้เล่นทั้ง 2 คน READY แล้ว — คนสร้างห้องสามารถเริ่มเกมได้");
+      }
+
+      if (data.state.status === "playing") {
+        setMessage("🔥 เริ่มการแข่งขันแล้ว!");
       }
     }
 
-    // ===============================================
-    // ERROR
-    // ===============================================
+    function handleStartGameResult(data) {
+      if (!data?.success) {
+        setError(data?.message || "ไม่สามารถเริ่มเกมได้");
+        return;
+      }
 
-    function handleServerError(data) {
-      console.error("server_error:", data);
+      const code = String(data?.roomCode || "").trim().toUpperCase();
+      if (!code) {
+        setError("เริ่มเกมแล้ว แต่ไม่พบ Room Code กรุณากลับเข้าห้องอีกครั้ง");
+        return;
+      }
 
-      setLoading(false);
-
-      setError(
-        data?.message ||
-          data?.error ||
-          "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์"
-      );
+      navigate(`/football/multiplayer/game?room=${encodeURIComponent(code)}`);
     }
 
-    // ===============================================
+    // ===================================================
     // PLAYER LEFT
-    // ===============================================
+    // ===================================================
 
     function handlePlayerLeft(data) {
-      console.log("player_left:", data);
+      updatePlayers(data.state);
 
-      updatePlayers(data);
+      setStatus("waiting");
 
-      setMessage("👋 ผู้เล่นออกจากห้องแล้ว");
-    }
+      setReady(false);
 
-    // ===============================================
-    // ROOM ERROR
-    // ===============================================
-
-    function handleRoomError(data) {
-      console.error("room_error:", data);
-
-      setLoading(false);
-
-      setError(
-        data?.message ||
-          data?.error ||
-          "ไม่สามารถเข้าห้องได้"
+      setMessage(
+        "ผู้เล่นอีกคนออกจากห้อง"
       );
     }
 
-    // ===============================================
+    // ===================================================
+    // ERROR
+    // ===================================================
+
+    function handleRoomError(data) {
+      setError(
+        data?.message ||
+          "เกิดข้อผิดพลาด"
+      );
+    }
+
+    // ===================================================
     // REGISTER EVENTS
-    // ===============================================
+    // ===================================================
 
-    socket.on("connect", handleConnect);
+    socket.on(
+      "connect",
+      handleConnect
+    );
 
-    socket.on("disconnect", handleDisconnect);
+    socket.on(
+      "disconnect",
+      handleDisconnect
+    );
 
-    socket.on("connect_error", handleConnectError);
+    socket.on(
+      "room_created",
+      handleRoomCreated
+    );
 
-    socket.on("room_created", handleRoomCreated);
+    socket.on(
+      "room_joined",
+      handleRoomJoined
+    );
 
-    socket.on("room_joined", handleRoomJoined);
+    socket.on(
+      "player_joined",
+      handlePlayerJoined
+    );
 
-    socket.on("player_joined", handlePlayerJoined);
-
-    socket.on("players_update", handlePlayersUpdate);
-
-    socket.on("player_ready", handlePlayerReady);
-
-    socket.on("game_state", handleGameState);
+    socket.on(
+      "game_state",
+      handleGameState
+    );
 
     socket.on(
       "start_game_result",
@@ -363,33 +206,34 @@ export default function MultiplayerPage() {
     );
 
     socket.on(
-      "game_started",
-      handleGameStarted
+      "player_left",
+      handlePlayerLeft
     );
 
-    socket.on("error", handleServerError);
+    socket.on(
+      "room_error",
+      handleRoomError
+    );
 
-    socket.on("server_error", handleServerError);
+    // Socket อาจ connect ไปแล้วก่อน component mount
+    if (socket.connected) {
+      setConnected(true);
+      setPlayerId(socket.id);
+    }
 
-    socket.on("room_error", handleRoomError);
-
-    socket.on("player_left", handlePlayerLeft);
-
-    // ===============================================
+    // ===================================================
     // CLEANUP
-    // ===============================================
+    // ===================================================
 
     return () => {
-      socket.off("connect", handleConnect);
+      socket.off(
+        "connect",
+        handleConnect
+      );
 
       socket.off(
         "disconnect",
         handleDisconnect
-      );
-
-      socket.off(
-        "connect_error",
-        handleConnectError
       );
 
       socket.off(
@@ -408,16 +252,6 @@ export default function MultiplayerPage() {
       );
 
       socket.off(
-        "players_update",
-        handlePlayersUpdate
-      );
-
-      socket.off(
-        "player_ready",
-        handlePlayerReady
-      );
-
-      socket.off(
         "game_state",
         handleGameState
       );
@@ -428,18 +262,8 @@ export default function MultiplayerPage() {
       );
 
       socket.off(
-        "game_started",
-        handleGameStarted
-      );
-
-      socket.off(
-        "error",
-        handleServerError
-      );
-
-      socket.off(
-        "server_error",
-        handleServerError
+        "player_left",
+        handlePlayerLeft
       );
 
       socket.off(
@@ -447,143 +271,104 @@ export default function MultiplayerPage() {
         handleRoomError
       );
 
-      socket.off(
-        "player_left",
-        handlePlayerLeft
-      );
+      // สำคัญ:
+      // ห้าม socket.disconnect() ตรงนี้
+      // เพราะหน้า Game จะใช้ Socket connection เดิม
     };
-  }, [navigate, roomCode, roomCodeInput]);
+  }, []);
 
-  // ===================================================
+  // =====================================================
   // UPDATE PLAYERS
-  // ===================================================
+  // =====================================================
 
-  function updatePlayers(data) {
-    if (!data) {
+  function updatePlayers(state) {
+    if (!state) {
       setPlayers([]);
-      setOwnerId("");
-      setReady(false);
       return;
     }
 
-    const nextPlayers = Array.isArray(data.players)
-      ? data.players
-      : [];
-
-    setPlayers(nextPlayers);
-
-    if (
-      data.ownerId ||
-      data.hostId ||
-      data.creatorId
-    ) {
-      setOwnerId(
-        data.ownerId ||
-          data.hostId ||
-          data.creatorId
-      );
-    }
-
-    // -----------------------------------------------
-    // Find current player
-    // -----------------------------------------------
-
-    const me = nextPlayers.find(
-      (player) =>
-        player.id === socket.id ||
-        player.socketId === socket.id
+    setPlayers(
+      Array.isArray(state.players)
+        ? state.players
+        : []
     );
-
-    if (me) {
-      setReady(Boolean(me.ready));
-    }
-
-    // -----------------------------------------------
-    // ถ้า Server ส่ง ownerId มา
-    // -----------------------------------------------
-
-    if (data.ownerId === socket.id) {
-      setOwnerId(socket.id);
-    }
+    setOwnerId(state.ownerId || "");
   }
 
-  // ===================================================
+  // =====================================================
   // CREATE ROOM
-  // ===================================================
+  // =====================================================
 
   function createRoom() {
     setError("");
     setMessage("");
 
-    const trimmedName = name.trim();
-
-    if (!trimmedName) {
-      setError("กรุณากรอกชื่อผู้เล่น");
-      return;
-    }
-
-    if (!socket.connected) {
+    if (!connected) {
       setError(
-        "Socket ยังไม่ได้เชื่อมต่อกับเซิร์ฟเวอร์"
+        "ยังไม่ได้เชื่อมต่อ Multiplayer Server"
       );
+
       return;
     }
 
-    setLoading(true);
+    const playerName =
+      name.trim() || "Player 1";
 
-    socket.emit("create_room", {
-      name: trimmedName,
-    });
+    socket.emit(
+      "create_room",
+      {
+        name: playerName,
+      }
+    );
   }
 
-  // ===================================================
+  // =====================================================
   // JOIN ROOM
-  // ===================================================
+  // =====================================================
 
   function joinRoom() {
     setError("");
     setMessage("");
 
-    const trimmedName = name.trim();
+    if (!connected) {
+      setError(
+        "ยังไม่ได้เชื่อมต่อ Multiplayer Server"
+      );
 
-    const code = roomCodeInput
-      .trim()
-      .toUpperCase();
-
-    if (!trimmedName) {
-      setError("กรุณากรอกชื่อผู้เล่น");
       return;
     }
+
+    const code =
+      roomCodeInput
+        .trim()
+        .toUpperCase();
 
     if (!code) {
-      setError("กรุณากรอก Room Code");
-      return;
-    }
-
-    if (!socket.connected) {
       setError(
-        "Socket ยังไม่ได้เชื่อมต่อกับเซิร์ฟเวอร์"
+        "กรุณาใส่ Room Code"
       );
+
       return;
     }
 
-    setLoading(true);
+    const playerName =
+      name.trim() || "Player 2";
 
-    socket.emit("join_room", {
-      roomCode: code,
-      name: trimmedName,
-    });
+    socket.emit(
+      "join_room",
+      {
+        roomCode: code,
+        name: playerName,
+      }
+    );
   }
 
-  // ===================================================
+  // =====================================================
   // READY
-  // ===================================================
+  // =====================================================
 
   function toggleReady() {
-    setError("");
-
     if (!roomCode) {
-      setError("ยังไม่มี Room Code");
       return;
     }
 
@@ -591,138 +376,57 @@ export default function MultiplayerPage() {
       setError(
         "Socket หลุดการเชื่อมต่อ"
       );
+
       return;
     }
 
-    const me = players.find(
-      (player) =>
-        player.id === socket.id ||
-        player.socketId === socket.id
-    );
+    const me = players.find((player) => player.id === socket.id);
+    const nextReady = !(me?.ready ?? ready);
 
-    const currentReady =
-      me?.ready ?? ready;
-
-    const nextReady = !currentReady;
-
-    // -----------------------------------------------
-    // ส่งสถานะ READY ไป Server
-    // -----------------------------------------------
-
-    socket.emit("player_ready", {
-      roomCode,
-      ready: nextReady,
-    });
-
-    // -----------------------------------------------
-    // อัปเดต UI ทันที
-    // -----------------------------------------------
-
+    socket.emit("player_ready", { roomCode });
     setReady(nextReady);
+    setError("");
 
-    setPlayers((currentPlayers) =>
-      currentPlayers.map((player) => {
-        const isMe =
-          player.id === socket.id ||
-          player.socketId === socket.id;
-
-        if (!isMe) return player;
-
-        return {
-          ...player,
-          ready: nextReady,
-        };
-      })
-    );
-
-    if (nextReady) {
-      setMessage(
-        "🟢 คุณพร้อมสำหรับการแข่งขันแล้ว"
-      );
-    } else {
-      setMessage(
-        "🟡 ยกเลิก READY แล้ว"
-      );
-    }
+    setMessage(nextReady
+      ? "🟢 คุณพร้อมสำหรับการแข่งขันแล้ว"
+      : "🟡 ยกเลิก READY แล้ว");
   }
 
-  // ===================================================
+  // =====================================================
   // START GAME
-  // ===================================================
+  // =====================================================
 
   function startGame() {
     setError("");
 
-    // -----------------------------------------------
-    // Connection check
-    // -----------------------------------------------
-
     if (!socket.connected) {
-      setError(
-        "Socket หลุดการเชื่อมต่อ"
-      );
+      setError("Socket หลุดการเชื่อมต่อ");
       return;
     }
 
-    // -----------------------------------------------
-    // Player count
-    // -----------------------------------------------
+    if (socket.id !== ownerId) {
+      setError("เฉพาะคนสร้างห้องเท่านั้นที่เริ่มเกมได้");
+      return;
+    }
 
     if (players.length !== 2) {
-      setError(
-        "ต้องมีผู้เล่นครบ 2 คนก่อนเริ่มเกม"
-      );
+      setError("ต้องมีผู้เล่นครบ 2 คนก่อนเริ่มเกม");
       return;
     }
 
-    // -----------------------------------------------
-    // READY check
-    // -----------------------------------------------
-
-    const allReady = players.every(
-      (player) => Boolean(player.ready)
-    );
-
-    if (!allReady) {
-      setError(
-        "ผู้เล่นทั้ง 2 คนต้องกด READY ก่อน"
-      );
+    if (!players.every((player) => player.ready)) {
+      setError("ผู้เล่นทั้ง 2 คนต้องกด READY ก่อน");
       return;
     }
 
-    // -----------------------------------------------
-    // Owner check
-    // -----------------------------------------------
-    //
-    // สำคัญ:
-    // เราจะไม่ซ่อนปุ่มด้วย ownerId อีกแล้ว
-    // แต่ให้ปุ่มแสดงขึ้นมาเสมอเมื่อพร้อม
-    //
-    // แล้วให้ Server เป็นคนตรวจสอบว่าใครมีสิทธิ์
-    // เริ่มเกม
-    //
-    // แบบนี้แก้ปัญหา ownerId ไม่ตรง socket.id
-    // แล้วปุ่มหาย
-    // -----------------------------------------------
-
-    setLoading(true);
-
-    setMessage(
-      "⏳ กำลังเริ่มการแข่งขัน..."
-    );
-
-    socket.emit("start_game", {
-      roomCode,
-    });
+    socket.emit("start_game", { roomCode });
   }
 
-  // ===================================================
+  // =====================================================
   // COPY ROOM CODE
-  // ===================================================
+  // =====================================================
 
   async function copyRoomCode() {
-    if (!roomCode) return;
-
     try {
       await navigator.clipboard.writeText(
         roomCode
@@ -731,54 +435,42 @@ export default function MultiplayerPage() {
       setMessage(
         "📋 คัดลอก Room Code แล้ว"
       );
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        "ไม่สามารถคัดลอก Room Code ได้"
+    } catch {
+      setMessage(
+        "Room Code: " + roomCode
       );
     }
   }
 
-  // ===================================================
-  // LEAVE ROOM
-  // ===================================================
+  // =====================================================
+  // PLAYER COLORS
+  // =====================================================
 
-  function leaveRoom() {
-    if (socket.connected && roomCode) {
-      socket.emit("leave_room", {
-        roomCode,
-      });
+  function getPlayerClass(index) {
+    if (index === 0) {
+      return (
+        "border-green-500 bg-green-500/10"
+      );
     }
 
-    setRoomCode("");
-
-    setRoomCodeInput("");
-
-    setPlayers([]);
-
-    setOwnerId("");
-
-    setReady(false);
-
-    setStatus("lobby");
-
-    setMessage("");
-
-    setError("");
+    return (
+      "border-blue-500 bg-blue-500/10"
+    );
   }
 
-  // ===================================================
+  // =====================================================
   // RENDER
   // =====================================================
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-8 text-white">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-slate-950 text-white">
+      <Header />
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+      <main className="mx-auto max-w-6xl px-6 py-10">
+
+        {/* ================================================= */}
+        {/* HEADER */}
+        {/* ================================================= */}
 
         <div className="mb-8 text-center">
 
@@ -786,601 +478,400 @@ export default function MultiplayerPage() {
             ⚽
           </div>
 
-          <h1 className="text-4xl font-black tracking-tight">
-            Multiplayer Football
+          <h1 className="text-4xl font-black md:text-5xl">
+            Football Coding
+            <span className="text-green-400">
+              {" "}Multiplayer
+            </span>
           </h1>
 
-          <p className="mt-2 text-slate-400">
-            เล่นกับเพื่อนแบบ Real-time
+          <p className="mt-3 text-slate-400">
+            แข่งขันเขียน Python กับเพื่อนแบบ Realtime
           </p>
 
-          {/* Connection Status */}
+          {/* CONNECTION */}
 
-          <div className="mt-4 flex justify-center">
+          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-2">
 
-            <div
-              className={`rounded-full border px-4 py-2 text-sm font-bold ${
+            <span
+              className={`h-3 w-3 rounded-full ${
                 connected
-                  ? "border-green-500/30 bg-green-500/10 text-green-400"
-                  : "border-red-500/30 bg-red-500/10 text-red-400"
+                  ? "bg-green-400"
+                  : "bg-red-500"
               }`}
-            >
+            />
+
+            <span className="text-sm">
               {connected
-                ? "🟢 Connected"
-                : "🔴 Disconnected"}
-            </div>
+                ? "Multiplayer Server Connected"
+                : "Connecting..."}
+            </span>
 
           </div>
 
         </div>
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
+        {/* ================================================= */}
+        {/* LOBBY */}
+        {/* ================================================= */}
 
-        {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
-            ❌ {error}
-          </div>
-        )}
+        {!roomCode && (
 
-        {/* =================================================
-            MESSAGE
-        ================================================= */}
-
-        {message && !error && (
-          <div className="mb-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-center text-sm font-semibold text-green-300">
-            {message}
-          </div>
-        )}
-
-        {/* =================================================
-            LOBBY
-        ================================================= */}
-
-        {status === "lobby" && (
           <div className="grid gap-6 md:grid-cols-2">
 
-            {/* ===============================
-                CREATE ROOM
-            =============================== */}
+            {/* ================================================= */}
+            {/* CREATE ROOM */}
+            {/* ================================================= */}
 
-            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
 
-              <div className="mb-5">
-
-                <div className="mb-2 text-3xl">
-                  👑
-                </div>
-
-                <h2 className="text-2xl font-black">
-                  สร้างห้อง
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-400">
-                  สร้างห้องใหม่แล้วชวนเพื่อนเข้ามา
-                </p>
-
+              <div className="mb-6 text-4xl">
+                🎮
               </div>
 
-              <label className="mb-2 block text-sm font-bold text-slate-300">
+              <h2 className="text-2xl font-bold">
+                สร้างห้อง
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-400">
+                สร้างห้องใหม่แล้วส่ง Room Code
+                ให้เพื่อน
+              </p>
+
+              <label className="mt-6 block text-sm font-semibold text-slate-300">
                 ชื่อผู้เล่น
               </label>
 
               <input
-                type="text"
                 value={name}
                 onChange={(e) =>
                   setName(e.target.value)
                 }
-                placeholder="เช่น Player 1"
-                maxLength={30}
-                className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-green-500"
+                placeholder="เช่น Phattaradanai"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-green-400"
               />
 
               <button
                 onClick={createRoom}
-                disabled={loading || !connected}
-                className="w-full rounded-xl bg-green-500 px-5 py-3 font-black text-slate-950 transition hover:scale-[1.02] hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!connected}
+                className="mt-5 w-full rounded-xl bg-green-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading
-                  ? "⏳ กำลังสร้างห้อง..."
-                  : "👑 สร้างห้อง"}
+                🎮 สร้างห้อง
               </button>
 
-            </div>
+            </section>
 
-            {/* ===============================
-                JOIN ROOM
-            =============================== */}
+            {/* ================================================= */}
+            {/* JOIN ROOM */}
+            {/* ================================================= */}
 
-            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
 
-              <div className="mb-5">
-
-                <div className="mb-2 text-3xl">
-                  🚪
-                </div>
-
-                <h2 className="text-2xl font-black">
-                  เข้าร่วมห้อง
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-400">
-                  ใส่ Room Code จากเพื่อน
-                </p>
-
+              <div className="mb-6 text-4xl">
+                🚪
               </div>
 
-              <label className="mb-2 block text-sm font-bold text-slate-300">
+              <h2 className="text-2xl font-bold">
+                เข้าร่วมห้อง
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-400">
+                ใส่ Room Code ที่เพื่อนส่งให้
+              </p>
+
+              <label className="mt-6 block text-sm font-semibold text-slate-300">
                 ชื่อผู้เล่น
               </label>
 
               <input
-                type="text"
                 value={name}
                 onChange={(e) =>
                   setName(e.target.value)
                 }
                 placeholder="เช่น Player 2"
-                maxLength={30}
-                className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-green-500"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-blue-400"
               />
 
-              <label className="mb-2 block text-sm font-bold text-slate-300">
+              <label className="mt-4 block text-sm font-semibold text-slate-300">
                 Room Code
               </label>
 
               <input
-                type="text"
                 value={roomCodeInput}
                 onChange={(e) =>
                   setRoomCodeInput(
                     e.target.value.toUpperCase()
                   )
                 }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    joinRoom();
-                  }
-                }}
-                placeholder="เช่น P492F9"
-                maxLength={10}
-                className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-lg uppercase tracking-widest text-white outline-none transition placeholder:text-slate-600 focus:border-green-500"
+                maxLength={6}
+                placeholder="AB12CD"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-center text-xl font-black tracking-[0.4em] uppercase outline-none transition focus:border-blue-400"
               />
 
               <button
                 onClick={joinRoom}
-                disabled={loading || !connected}
-                className="w-full rounded-xl border border-green-500 px-5 py-3 font-black text-green-400 transition hover:bg-green-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!connected}
+                className="mt-5 w-full rounded-xl bg-blue-500 px-5 py-3 font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading
-                  ? "⏳ กำลังเข้าห้อง..."
-                  : "🚪 เข้าร่วมห้อง"}
+                🚪 เข้าร่วมห้อง
               </button>
 
-            </div>
+            </section>
 
           </div>
+
         )}
 
-        {/* =================================================
-            ROOM
-        ================================================= */}
+        {/* ================================================= */}
+        {/* ROOM */}
+        {/* ================================================= */}
 
-        {status === "room" && (
-          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        {roomCode && (
 
-            {/* ============================================
-                ROOM HEADER
-            ============================================ */}
+          <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl md:p-8">
 
-            <div className="flex flex-col items-center justify-between gap-4 border-b border-slate-800 pb-6 md:flex-row">
+            {/* ================================================= */}
+            {/* ROOM HEADER */}
+            {/* ================================================= */}
+
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
               <div>
 
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                  Room Code
+                <p className="text-sm text-slate-400">
+                  ROOM CODE
                 </p>
 
-                <div className="mt-1 flex items-center gap-3">
+                <button
+                  onClick={copyRoomCode}
+                  className="mt-1 text-4xl font-black tracking-[0.25em] text-green-400 transition hover:text-green-300"
+                  title="คลิกเพื่อคัดลอก"
+                >
+                  {roomCode}
+                </button>
 
-                  <h2 className="font-mono text-4xl font-black tracking-[0.15em] text-green-400">
+                <p className="mt-2 text-xs text-slate-500">
+                  คลิก Room Code เพื่อคัดลอก
+                </p>
+
+              </div>
+
+              <div className="rounded-2xl border border-slate-700 bg-slate-950 px-5 py-3 text-center">
+
+                <div className="text-xs text-slate-500">
+                  STATUS
+                </div>
+
+                <div className="mt-1 font-bold text-green-400">
+                  {status === "playing"
+                    ? "🔥 PLAYING"
+                    : "⏳ WAITING"}
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* ================================================= */}
+            {/* PLAYERS */}
+            {/* ================================================= */}
+
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+
+              {[0, 1].map((index) => {
+
+                const player =
+                  players[index];
+
+                return (
+
+                  <div
+                    key={index}
+                    className={`rounded-3xl border-2 p-6 ${getPlayerClass(
+                      index
+                    )}`}
+                  >
+
+                    <div className="flex items-center justify-between">
+
+                      <div className="text-5xl">
+                        {index === 0
+                          ? "🟢"
+                          : "🔵"}
+                      </div>
+
+                      <div className="text-right">
+
+                        <div className="text-xs text-slate-500">
+                          PLAYER {index + 1}
+                        </div>
+
+                        <div className="mt-1 text-xl font-black">
+                          {player
+                            ? player.name
+                            : "Waiting..."}
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    <div className="mt-5 rounded-2xl bg-slate-950/60 p-4">
+
+                      <div className="flex justify-between text-sm">
+
+                        <span className="text-slate-400">
+                          Status
+                        </span>
+
+                        <span
+                          className={
+                            player?.ready
+                              ? "font-bold text-green-400"
+                              : "text-yellow-400"
+                          }
+                        >
+                          {player?.ready
+                            ? "READY"
+                            : "NOT READY"}
+                        </span>
+
+                      </div>
+
+                      <div className="mt-3 flex justify-between text-sm">
+
+                        <span className="text-slate-400">
+                          Score
+                        </span>
+
+                        <span className="font-bold">
+                          {player?.score ?? 0}
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                );
+              })}
+
+            </div>
+
+            {/* ================================================= */}
+            {/* WAITING */}
+            {/* ================================================= */}
+
+            {players.length < 2 && (
+
+              <div className="mt-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-center">
+
+                <div className="text-2xl">
+                  ⏳
+                </div>
+
+                <p className="mt-2 font-semibold text-yellow-300">
+                  กำลังรอผู้เล่นคนที่ 2
+                </p>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  ส่ง Room Code
+                  <span className="mx-2 font-black text-green-400">
                     {roomCode}
-                  </h2>
+                  </span>
+                  ให้เพื่อน
+                </p>
 
+              </div>
+
+            )}
+
+            {/* ================================================= */}
+            {/* READY / START */}
+            {/* ================================================= */}
+
+            {players.length >= 2 && (
+
+              <div className="mt-8 text-center">
+
+                <button
+                  onClick={toggleReady}
+                  className={`rounded-xl px-8 py-3 font-black transition ${
+                    ready
+                      ? "bg-green-500 text-slate-950 hover:bg-green-400"
+                      : "border border-green-500 text-green-400 hover:bg-green-500 hover:text-slate-950"
+                  }`}
+                >
+                  {ready
+                    ? "🟢 READY แล้ว"
+                    : "⚡ READY"}
+                </button>
+
+                {socket.id === ownerId && (
                   <button
-                    onClick={copyRoomCode}
-                    className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-bold text-slate-300 transition hover:border-green-500 hover:text-green-400"
+                    onClick={startGame}
+                    disabled={players.length !== 2 || !players.every((player) => player.ready)}
+                    className="ml-3 rounded-xl bg-white px-8 py-3 font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    📋
+                    ⚽ เริ่มการแข่งขัน
                   </button>
-
-                </div>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  แชร์รหัสนี้ให้เพื่อนเพื่อเข้าห้อง
-                </p>
-
-              </div>
-
-              <div className="text-center md:text-right">
-
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                  Status
-                </p>
-
-                <p className="mt-1 text-lg font-black text-green-400">
-                  WAITING
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* ============================================
-                PLAYERS
-            ============================================ */}
-
-            <div className="mt-8">
-
-              <div className="mb-4 flex items-center justify-between">
-
-                <h3 className="text-xl font-black">
-                  👥 ผู้เล่น
-                </h3>
-
-                <span className="rounded-full bg-slate-800 px-3 py-1 text-sm font-bold text-slate-300">
-                  {players.length} / 2
-                </span>
-
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-
-                {/* ======================================
-                    PLAYER SLOT 1
-                ====================================== */}
-
-                {players[0] ? (
-                  <PlayerCard
-                    player={players[0]}
-                    isMe={
-                      players[0].id === socket.id ||
-                      players[0].socketId === socket.id
-                    }
-                    isOwner={
-                      players[0].id === ownerId ||
-                      players[0].socketId === ownerId
-                    }
-                  />
-                ) : (
-                  <EmptyPlayerSlot number={1} />
                 )}
 
-                {/* ======================================
-                    PLAYER SLOT 2
-                ====================================== */}
-
-                {players[1] ? (
-                  <PlayerCard
-                    player={players[1]}
-                    isMe={
-                      players[1].id === socket.id ||
-                      players[1].socketId === socket.id
-                    }
-                    isOwner={
-                      players[1].id === ownerId ||
-                      players[1].socketId === ownerId
-                    }
-                  />
-                ) : (
-                  <EmptyPlayerSlot number={2} />
+                {socket.id !== ownerId && (
+                  <p className="mt-3 text-xs text-slate-500">
+                    👑 คนสร้างห้องเท่านั้นที่สามารถกดเริ่มการแข่งขัน
+                  </p>
                 )}
 
               </div>
 
-            </div>
+            )}
 
-            {/* ============================================
-                READY / START
-            ============================================ */}
+            {/* ================================================= */}
+            {/* MESSAGE */}
+            {/* ================================================= */}
 
-            {players.length >= 1 && (
-              <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/50 p-6 text-center">
+            {message && (
 
-                {/* Status Text */}
-
-                <div className="mb-5">
-
-                  {players.length < 2 ? (
-                    <>
-                      <div className="text-lg font-black text-yellow-400">
-                        ⏳ รอผู้เล่นคนที่ 2
-                      </div>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        ส่ง Room Code ให้เพื่อนเพื่อเข้าร่วม
-                      </p>
-                    </>
-                  ) : players.every(
-                      (player) =>
-                        Boolean(player.ready)
-                    ) ? (
-                    <>
-                      <div className="text-lg font-black text-green-400">
-                        🔥 ผู้เล่นทั้ง 2 คนพร้อมแล้ว!
-                      </div>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        สามารถเริ่มการแข่งขันได้
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-lg font-black text-yellow-400">
-                        ⚡ รอผู้เล่นกด READY
-                      </div>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        ผู้เล่นทั้ง 2 คนต้องกด READY
-                      </p>
-                    </>
-                  )}
-
-                </div>
-
-                {/* ========================================
-                    BUTTONS
-                ======================================== */}
-
-                <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-
-                  {/* READY BUTTON */}
-
-                  <button
-                    onClick={toggleReady}
-                    disabled={players.length !== 2}
-                    className={`rounded-xl px-8 py-3 font-black transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 ${
-                      ready
-                        ? "bg-green-500 text-slate-950 hover:bg-green-400"
-                        : "border border-green-500 text-green-400 hover:bg-green-500 hover:text-slate-950"
-                    }`}
-                  >
-                    {ready
-                      ? "🟢 READY แล้ว"
-                      : "⚡ READY"}
-                  </button>
-
-                  {/* ====================================
-                      START GAME BUTTON
-
-                      สำคัญ:
-                      ปุ่มนี้ไม่ใช้
-
-                      socket.id === ownerId
-
-                      ในการซ่อนปุ่มแล้ว
-
-                      เพราะถ้า ownerId ไม่ตรง
-                      ปุ่มจะหายทันที
-
-                      ให้ปุ่มแสดงเมื่อครบ 2 คน
-                      และ READY ครบ
-
-                      Server จะเป็นผู้ตรวจสอบ
-                      ว่าใครมีสิทธิ์เริ่มเกม
-                  ==================================== */}
-
-                  {players.length === 2 &&
-                    players.every(
-                      (player) =>
-                        Boolean(player.ready)
-                    ) && (
-                      <button
-                        onClick={startGame}
-                        disabled={loading}
-                        className="rounded-xl bg-green-500 px-8 py-3 font-black text-slate-950 shadow-lg shadow-green-500/20 transition hover:scale-105 hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {loading
-                          ? "⏳ กำลังเริ่ม..."
-                          : "⚽ เริ่มการแข่งขัน"}
-                      </button>
-                    )}
-
-                </div>
-
-                {/* ========================================
-                    OWNER MESSAGE
-                ======================================== */}
-
-                {players.length === 2 &&
-                  players.every(
-                    (player) =>
-                      Boolean(player.ready)
-                  ) && (
-                    <p className="mt-4 text-xs text-slate-500">
-                      👑 คนสร้างห้องเท่านั้นที่สามารถเริ่มการแข่งขันได้
-                    </p>
-                  )}
-
+              <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-center text-sm text-green-300">
+                {message}
               </div>
+
             )}
 
-            {/* ============================================
-                LEAVE ROOM
-            ============================================ */}
+            {/* ================================================= */}
+            {/* ERROR */}
+            {/* ================================================= */}
 
-            <div className="mt-6 text-center">
+            {error && (
 
-              <button
-                onClick={leaveRoom}
-                className="rounded-xl border border-red-500/40 px-5 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
-              >
-                🚪 ออกจากห้อง
-              </button>
+              <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm text-red-300">
+                ❌ {error}
+              </div>
 
-            </div>
+            )}
 
-          </div>
+          </section>
+
         )}
 
-        {/* =================================================
-            PLAYING
-        ================================================= */}
+        {/* ================================================= */}
+        {/* BACK */}
+        {/* ================================================= */}
 
-        {status === "playing" && (
-          <div className="rounded-3xl border border-green-500/30 bg-slate-900 p-10 text-center shadow-2xl">
+        <div className="mt-8 text-center">
 
-            <div className="text-6xl">
-              ⚽
-            </div>
-
-            <h2 className="mt-5 text-3xl font-black text-green-400">
-              🔥 เริ่มการแข่งขันแล้ว!
-            </h2>
-
-            <p className="mt-3 text-slate-400">
-              กำลังเข้าสู่สนามแข่งขัน...
-            </p>
-
-            <div className="mt-6">
-
-              <button
-                onClick={() =>
-                  navigate(
-                    `/football/multiplayer/game?room=${encodeURIComponent(
-                      roomCode
-                    )}`
-                  )
-                }
-                className="rounded-xl bg-green-500 px-8 py-3 font-black text-slate-950 transition hover:bg-green-400"
-              >
-                ⚽ เข้าสู่การแข่งขัน
-              </button>
-
-            </div>
-
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
-
-// =====================================================
-// PLAYER CARD
-// =====================================================
-
-function PlayerCard({
-  player,
-  isMe,
-  isOwner,
-}) {
-  const playerName =
-    player?.name ||
-    player?.playerName ||
-    "Unknown Player";
-
-  const isReady =
-    Boolean(player?.ready);
-
-  return (
-    <div
-      className={`relative rounded-2xl border p-5 transition ${
-        isReady
-          ? "border-green-500/40 bg-green-500/5"
-          : "border-slate-800 bg-slate-950"
-      }`}
-    >
-
-      {/* Owner */}
-
-      {isOwner && (
-        <div className="absolute right-4 top-4 rounded-full bg-yellow-500/10 px-2 py-1 text-xs font-bold text-yellow-400">
-          👑 HOST
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
-
-        {/* Avatar */}
-
-        <div
-          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl ${
-            isReady
-              ? "bg-green-500 text-slate-950"
-              : "bg-slate-800"
-          }`}
-        >
-          ⚽
-        </div>
-
-        {/* Info */}
-
-        <div className="min-w-0 flex-1">
-
-          <div className="flex flex-wrap items-center gap-2">
-
-            <h4 className="truncate text-lg font-black">
-              {playerName}
-            </h4>
-
-            {isMe && (
-              <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-black text-blue-400">
-                YOU
-              </span>
-            )}
-
-          </div>
-
-          <div className="mt-1">
-
-            {isReady ? (
-              <span className="text-sm font-bold text-green-400">
-                🟢 READY
-              </span>
-            ) : (
-              <span className="text-sm font-bold text-slate-500">
-                ⚪ NOT READY
-              </span>
-            )}
-
-          </div>
+          <Link
+            to="/football"
+            className="text-sm text-slate-400 transition hover:text-green-400"
+          >
+            ← กลับ Football Coding Mission
+          </Link>
 
         </div>
 
-      </div>
-
-    </div>
-  );
-}
-
-// =====================================================
-// EMPTY PLAYER SLOT
-// =====================================================
-
-function EmptyPlayerSlot({ number }) {
-  return (
-    <div className="flex min-h-[106px] items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/50">
-
-      <div className="text-center">
-
-        <div className="text-2xl">
-          👤
-        </div>
-
-        <p className="mt-1 text-sm font-bold text-slate-600">
-          Player {number}
-        </p>
-
-        <p className="text-xs text-slate-700">
-          Waiting...
-        </p>
-
-      </div>
-
+      </main>
     </div>
   );
 }
